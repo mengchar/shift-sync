@@ -44,8 +44,7 @@ export default function Home() {
     setStatus("Connecting...");
     
     try {
-      // NOTE: Change "http://127.0.0.1:8000" to your Railway URL when you deploy!
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "shift-sync-production.up.railway.app";
       const response = await fetch(`${apiBase}/sync`, { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
