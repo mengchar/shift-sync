@@ -107,7 +107,7 @@ export default function Home() {
               Connected to Google Calendar
             </div>
             
-            <p className='text-slate-400 w-full mb-4 text-center'>Step 2: Enter ABI Details</p>
+            <p className='text-slate-400 w-full mb-4 text-center'>Enter ABI Details</p>
             
             <form onSubmit={(e) => { e.preventDefault(); handleSync(); }} className="flex flex-col gap-8 w-81">
               <div className='flex flex-col gap-4'>
