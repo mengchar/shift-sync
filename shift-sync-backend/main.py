@@ -35,16 +35,20 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def get_google_calendar_service():
     creds = None
-    if os.path.exists('token.json'):
+    token_data = os.environ.get("GOOGLE_TOKEN_JSON")
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if token_data:
+        # Load credentials from the environment variable string
+        token_info = json.loads(token_data)
+        creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+    elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    if not creds:
+        raise Exception("Google Auth failed: No token found in environment or local file. "
+                        "Please run the script locally once to generate token.json.")
     return build('calendar', 'v3', credentials=creds)
 
 def run_sync_process(venue_id, username, password):
