@@ -44,7 +44,7 @@ export default function Home() {
     setStatus("Connecting...");
     
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "shift-sync-production.up.railway.app";
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://sshift-sync-production.up.railway.app";
       const response = await fetch(`${apiBase}/sync`, { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
