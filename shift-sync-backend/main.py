@@ -134,7 +134,8 @@ def run_sync_process(venue_id, username, password):
         driver.quit()
 
 def parse_shift_time(year, month, day, time_str):    
-    dt_str = f"{year}-{month}-{day} {time_str}"
+    clean_day = "".join(filter(str.isdigit, str(day)))
+    dt_str = f"{year}-{month}-{clean_day} {time_str}"
     return datetime.datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p")
 
 @app.post("/sync")
