@@ -4,7 +4,6 @@ A full-stack automation tool designed to bridge the gap between legacy workforce
 ## Features
 - Multi-Month Synchronization: Automatically detects and navigates to subsequent months to capture newly released schedules.
 - Real-Time Status Streaming: Utilizes Server-Sent Events (SSE) to provide live updates (e.g., "Logging in...", "Scraping March...") to the frontend.
-- Optimized Performance: Leverages batch JavaScript injection to reduce data extraction time from 180s to ~15s.
 - Secure OAuth 2.0 Flow: Implements delegated Google Calendar access, ensuring no user credentials or persistent tokens are stored server-side.
 - Duplicate Prevention: Intelligent event checking prevents the creation of redundant calendar entries.
 
