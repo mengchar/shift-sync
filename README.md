@@ -24,16 +24,20 @@ A full-stack automation tool designed to bridge the gap between legacy workforce
 - OAuth 2.0 Client ID with http://localhost:3000 whitelisted as a JavaScript Origin.
 
 ## Environment Variables
-Frontend (.env.local):
+### Frontend (.env.local):
 
 Bash
+```
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 # Use Railway URL for production
-Backend (Railway Variables):
+```
+### Backend (Railway Variables):
 
 Bash
+```
 CHROME_BIN=/usr/bin/chromium-browser
 CHROMEDRIVER_PATH=/usr/bin/chromedriver
+```
 ## Installation
 Clone the repository:
 
