@@ -67,59 +67,76 @@ def run_sync_process(venue_id, username, password, google_token):
         driver.implicitly_wait(10)
         driver.find_element(By.LINK_TEXT, "View My Schedule").click()
         
-        month_year_text = driver.find_element(By.CLASS_NAME, "MonthTitle").text
-        header_date = datetime.datetime.strptime(month_year_text, "%B %Y")
-        script = """
-    return [...document.querySelectorAll('#calendar_table .calendar_day_box')].map(box => {
-        let details = box.querySelector('.day_details');
-        if (!details) return null;
-        
-        return {
-            day: box.innerText.split('\\n')[0].trim(),
-            time: details.querySelector('a').innerText.split('(')[0].trim(),
-            description: details.innerText
-        };
-    }).filter(item => item !== null);
-    """
-        shifts_data = driver.execute_script(script)
-        
-        yield f"Found {len(shifts_data)} shifts. Uploading..."
-        for i, shift in enumerate(shifts_data):
-            start_time_str, end_time_str = shift['time'].split(' - ')
-            start_dt = parse_shift_time(header_date.year, header_date.month, shift['day'], start_time_str)
-            end_dt = parse_shift_time(header_date.year, header_date.month, shift['day'], end_time_str)
+        for month_index in range(2):
+            month_year_text = driver.find_element(By.CLASS_NAME, "MonthTitle").text
+            yield f"Scraping {month_year_text}..."
+            header_date = datetime.datetime.strptime(month_year_text, "%B %Y")
+            script = """
+            return [...document.querySelectorAll('#calendar_table .calendar_day_box')].map(box => {
+            let details = box.querySelector('.day_details');
+            if (!details) return null;
             
-            if end_dt < start_dt:
-                end_dt += datetime.timedelta(days=1)
+            return {
+                day: box.innerText.split('\\n')[0].trim(),
+                time: details.querySelector('a').innerText.split('(')[0].trim(),
+                description: details.innerText
+            };
+            }).filter(item => item !== null);
+            """
+            shifts_data = driver.execute_script(script)
+            if not shifts_data:
+                yield f"No shifts found in {month_year_text}."
+            else:
+                yield f"Found {len(shifts_data)} shifts. Uploading..."
+                for i, shift in enumerate(shifts_data):
+                    start_time_str, end_time_str = shift['time'].split(' - ')
+                    start_dt = parse_shift_time(header_date.year, header_date.month, shift['day'], start_time_str)
+                    end_dt = parse_shift_time(header_date.year, header_date.month, shift['day'], end_time_str)
+                    
+                    if end_dt < start_dt:
+                        end_dt += datetime.timedelta(days=1)
 
-            offset = "-08:00"
-            time_min = start_dt.isoformat() + offset
-            time_max = (start_dt + datetime.timedelta(minutes=1)).isoformat() + offset
-            events_result = cal_service.events().list(
-                calendarId='primary', 
-                timeMin=time_min,
-                timeMax=time_max,
-                singleEvents=True
-            ).execute()
-            existing_events = events_result.get('items', [])
-            target_summary = f"Sharks: {shift['time']}".strip()
-            
-            is_duplicate = any(
-                e.get('summary', '').strip() == target_summary 
-                for e in existing_events
-            )
+                    offset = "-08:00"
+                    time_min = start_dt.isoformat() + offset
+                    time_max = (start_dt + datetime.timedelta(minutes=1)).isoformat() + offset
+                    events_result = cal_service.events().list(
+                        calendarId='primary', 
+                        timeMin=time_min,
+                        timeMax=time_max,
+                        singleEvents=True
+                    ).execute()
+                    
+                    existing_events = events_result.get('items', [])
+                    target_summary = f"Sharks: {shift['time']}".strip()
+                    
+                    is_duplicate = any(
+                        e.get('summary', '').strip() == target_summary 
+                        for e in existing_events
+                    )
 
-            if is_duplicate:
-                yield f"Skipped (Duplicate) Day {shift['day']}"
-                continue
-            event = {
-                'summary': f"Sharks: {shift['time']}",
-                'description': shift['description'],
-                'start': {'dateTime': start_dt.isoformat(), 'timeZone': 'America/Los_Angeles'},
-                'end': {'dateTime': end_dt.isoformat(), 'timeZone': 'America/Los_Angeles'},
-            }
-            cal_service.events().insert(calendarId='primary', body=event).execute()
-            yield f"{shift['day']} at {shift['time']} ({i+1}/{len(shifts_data)})"
+                    if is_duplicate:
+                        yield f"Skipped (Duplicate) Day {shift['day']}"
+                        continue
+                    event = {
+                        'summary': f"Sharks: {shift['time']}",
+                        'description': shift['description'],
+                        'start': {'dateTime': start_dt.isoformat(), 'timeZone': 'America/Los_Angeles'},
+                        'end': {'dateTime': end_dt.isoformat(), 'timeZone': 'America/Los_Angeles'},
+                    }
+                    cal_service.events().insert(calendarId='primary', body=event).execute()
+                    yield f"{shift['day']} at {shift['time']} ({i+1}/{len(shifts_data)})"
+                
+            if month_index == 0: # Only try to click 'Next' after the first month
+                try:
+                    # ABI typically uses an anchor with ID 'lnkNextMonth' or 'btnNext'
+                    next_button = driver.find_element(By.ID, "NextMonthButton")
+                    yield "Checking next month..."
+                    next_button.click()
+                    
+                    driver.implicitly_wait(10)
+                except Exception:
+                    yield "No further months available."
+                    break
         yield "Sync Complete!"
     finally:
         driver.quit()
